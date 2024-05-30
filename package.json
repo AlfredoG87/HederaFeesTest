@@ -1,0 +1,16 @@
+{
+  "name": "hedera-schedule-fee-tester",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "@hashgraph/sdk": "^2.0.6",
+    "chai": "^4.3.4",
+    "dotenv": "^8.2.0",
+    "mocha": "^8.3.2"
+  }
+}
