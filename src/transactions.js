@@ -11,7 +11,8 @@ import {
     TopicMessageSubmitTransaction,
     AccountCreateTransaction,
     AccountId,
-    PrivateKey
+    PrivateKey,
+    TokenMintTransaction
 } from "@hashgraph/sdk";
 
 async function createHCSTopic(client) {
@@ -84,6 +85,36 @@ async function createFungibleToken(client, tokenName, tokenSymbol, initialSupply
     return receipt.tokenId;
 }
 
+
+async function createNFTToken(client, tokenName, tokenSymbol) {
+    const transaction = new TokenCreateTransaction()
+        .setTokenName(tokenName)
+        .setTokenSymbol(tokenSymbol)
+        .setDecimals(0)
+        .setInitialSupply(0)
+        .setTreasuryAccountId(client.operatorAccountId)
+        .setTokenType(TokenType.NonFungibleUnique)
+        .setSupplyKey(client.operatorPublicKey)
+        .setAdminKey(client.operatorPublicKey);
+
+    const txResponse = await transaction.execute(client);
+    const receipt = await txResponse.getReceipt(client);
+
+    return receipt.tokenId;
+}
+
+async function mintNFTToken(client, tokenId) {
+    const transaction = new TokenMintTransaction()
+        .setTokenId(tokenId)
+        .setMetadata([Buffer.from("metadata1"), Buffer.from("metadata2")]);
+
+    const txResponse = await transaction.execute(client);
+    const receipt = await txResponse.getReceipt(client);    
+
+    return receipt.serials[0].low;
+}
+
+
 async function associateTokenToAccount(client, tokenId, accountId) {
     const transaction = new TokenAssociateTransaction()
         .setAccountId(accountId)
@@ -104,6 +135,15 @@ async function transferToken(client, tokenId, senderId, recipientId, amount) {
     return txResponse;
 }
 
+async function transferNFTToken(client, tokenId, recipientId, serialId) {
+    const transaction = new TransferTransaction()
+        .addNftTransfer(tokenId, serialId, client.operatorAccountId, recipientId);
+
+    const txResponse = await transaction.execute(client);
+
+    return txResponse;
+}
+
 export {
     createHCSTopic,
     hcsMessageTransaction,
@@ -111,5 +151,8 @@ export {
     createNewAccount,
     createFungibleToken,
     associateTokenToAccount,
-    transferToken
+    transferToken,
+    createNFTToken,
+    mintNFTToken,
+    transferNFTToken
 };

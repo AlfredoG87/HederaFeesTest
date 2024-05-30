@@ -8,11 +8,15 @@ import {
     createNewAccount,
     createFungibleToken,
     associateTokenToAccount,
-    transferToken
+    transferToken,
+    createNFTToken,
+    mintNFTToken,
+    transferNFTToken
 } from "../src/transactions.js";
+import { TokenType } from "@hashgraph/sdk";
 
 describe("Hedera Transaction Fee Tests", function () {
-    this.timeout(60000); // Set timeout to 60 seconds
+    this.timeout(120000); // Set timeout to 60 seconds
 
     let topicID;
     let edClient;
@@ -21,6 +25,9 @@ describe("Hedera Transaction Fee Tests", function () {
     let clients = {};
     let recipientAccount;
     let fungibleTokenId;
+    let nftTokenId;
+    let recipientClient;
+    let nftSerialId;
     
 
     before(async function () {
@@ -39,21 +46,33 @@ describe("Hedera Transaction Fee Tests", function () {
         console.log("Fungible Token ID: " + fungibleTokenId);
         // associate the token to all accounts
         await associateTokenToAccount(ecClient, fungibleTokenId, ecClient.operatorAccountId);
-        const recipientClient = await createClientWithOperatorAccount(recipientAccount.accountId, recipientAccount.privateKey);
+        recipientClient = await createClientWithOperatorAccount(recipientAccount.accountId, recipientAccount.privateKey);
         const txResponse = await associateTokenToAccount(recipientClient, fungibleTokenId, recipientAccount.accountId);
-        console.log("Token associated with recipient account: " + txResponse);
-        recipientClient.close();
+        //console.log("Token associated with recipient account: " + txResponse);        
 
         // transfer 100 tokens to EC account
         const transferTokenResponse = await transferToken(edClient, fungibleTokenId, edClient.operatorAccountId, ecClient.operatorAccountId, 100);
-        console.log("Token transfer response: " + transferTokenResponse);
+        //console.log("Token transfer response: " + transferTokenResponse);
 
+        // create and prepare NFT Token Test
+        nftTokenId = await createNFTToken(edClient, "NFTTokenName", "NFTSymbol");
+        console.log("NFT Token ID: " + nftTokenId);
+        // associate the token to all accounts
+        await associateTokenToAccount(ecClient, nftTokenId, ecClient.operatorAccountId);
+        const txResponseNFT = await associateTokenToAccount(recipientClient, nftTokenId, recipientAccount.accountId);
+        //console.log("NFT Token associated with recipient account: " + txResponseNFT);
+
+        //mint NFT
+        nftSerialId = await mintNFTToken(edClient, nftTokenId, ecClient.operatorAccountId);
+        console.log("NFT Serial ID: " + nftSerialId);
+        
     });
 
     after(async function () {
         console.log(testResults);
         edClient.close();
         ecClient.close();
+        recipientClient.close();
     });
 
     it("HCS message with 1 byte", async function () {        
@@ -77,6 +96,18 @@ describe("Hedera Transaction Fee Tests", function () {
         }
     });
 
+    it("An NFT token transfer", async function () {
+
+        // first ED to EC.
+        const txResponse = await transferNFTToken(edClient, nftTokenId, ecClient.operatorAccountId, nftSerialId);        
+        await assertAndReportCost(txResponse, clients["ED"], testResults, "An NFT token transfer");
+
+        // then EC to recipient        
+        const txResponseRecipient = await transferNFTToken(ecClient, nftTokenId, recipientAccount.accountId, nftSerialId);
+        await assertAndReportCost(txResponseRecipient, clients["EC"], testResults, "An NFT token transfer");
+
+    });
+
 
 
 
@@ -87,7 +118,8 @@ async function assertAndReportCost(txResponse, client, testResults, testDescript
     const record = await txResponse.getRecord(client.client);
     const transactionFee = record.transactionFee.toTinybars();
     expect(transactionFee.toNumber()).to.be.greaterThan(0);
-    testResults[`${testDescription} - KeyType: ${client.name}`] = transactionFee.toNumber();
+    const exchangeRate = record.receipt.exchangeRate.cents;
+    testResults[`${testDescription} - KeyType: ${client.name}`] = { "tiny bar": transactionFee.toNumber(), "exchange rate in cents" : exchangeRate };
 }
 
 
@@ -104,12 +136,16 @@ A fungible token transfer with an EC key
 
 An NFT token transfer with an ED key	
 An NFT token transfer with an EC key	
+
 A smart contract execution of a simple value transfer of 1 tiny bar (ContractCall w ED key and EthereumTransaction)	
 A smart contract execution of a simple value transfer of 1 tiny bar (ContractCall w EC key and EthereumTransaction)	
+
 A smart contract execution of a system contract HTS CryptoTransfer of 1 tiny bar (ContractCall w ED key and EthereumTransaction)	
-A smart contract execution of a system contract HTS CryptoTransfer of 1 tiny bar (ContractCall w EC key and EthereumTransaction)	
+A smart contract execution of a system contract HTS CryptoTransfer of 1 tiny bar (ContractCall w EC key and EthereumTransaction)
+
 A smart contract execution of a system contract HTS CryptoTransfer of 1 fungible token (ContractCall w ED key and EthereumTransaction)	
 A smart contract execution of a system contract HTS CryptoTransfer of 1 fungible token (ContractCall w EC key and EthereumTransaction)	
+
 A smart contract execution of a system contract HTS CryptoTransfer of 1 NFT (ContractCall w ED key and EthereumTransaction)	
 A smart contract execution of a system contract HTS CryptoTransfer of 1 NFT (ContractCall w EC key and EthereumTransaction)
 */
