@@ -13,7 +13,6 @@ import {
     mintNFTToken,
     transferNFTToken
 } from "../src/transactions.js";
-import { TokenType } from "@hashgraph/sdk";
 
 describe("Hedera Transaction Fee Tests", function () {
     this.timeout(120000); // Set timeout to 60 seconds
@@ -136,16 +135,4 @@ A fungible token transfer with an EC key
 
 An NFT token transfer with an ED key	
 An NFT token transfer with an EC key	
-
-A smart contract execution of a simple value transfer of 1 tiny bar (ContractCall w ED key and EthereumTransaction)	
-A smart contract execution of a simple value transfer of 1 tiny bar (ContractCall w EC key and EthereumTransaction)	
-
-A smart contract execution of a system contract HTS CryptoTransfer of 1 tiny bar (ContractCall w ED key and EthereumTransaction)	
-A smart contract execution of a system contract HTS CryptoTransfer of 1 tiny bar (ContractCall w EC key and EthereumTransaction)
-
-A smart contract execution of a system contract HTS CryptoTransfer of 1 fungible token (ContractCall w ED key and EthereumTransaction)	
-A smart contract execution of a system contract HTS CryptoTransfer of 1 fungible token (ContractCall w EC key and EthereumTransaction)	
-
-A smart contract execution of a system contract HTS CryptoTransfer of 1 NFT (ContractCall w ED key and EthereumTransaction)	
-A smart contract execution of a system contract HTS CryptoTransfer of 1 NFT (ContractCall w EC key and EthereumTransaction)
 */

@@ -36,7 +36,7 @@ async function createClientWithOperatorAccount(accountId, privateKey) {
     client.setOperator(accountId, privateKey);
 
     return client;
-}   
+}
 
 
 export { 

@@ -58,6 +58,27 @@ async function createNewAccount(client, hbarAmount) {
         return accountDetails;
 }
 
+async function createNewEcAccount(client, hbarAmount) {
+    //Create new keys
+    const newAccountPrivateKey = PrivateKey.generateECDSA(); 
+    const newAccountPublicKey = newAccountPrivateKey.publicKey;
+
+    //Create new account and assign the public key
+    const newAccount = await new AccountCreateTransaction()
+        .setKey(newAccountPublicKey)
+        .setInitialBalance(Hbar.fromTinybars(100_000_000*hbarAmount))
+        .execute(client);
+        
+        // Get the new account ID
+        const getReceipt = await newAccount.getReceipt(client);
+        const newAccountId = getReceipt.accountId;
+        
+        //console.log("The new account ID is: " +newAccountId);
+        const accountDetails = { privateKey: newAccountPrivateKey, publicKey: newAccountPublicKey, accountId: newAccountId };
+        accounts[newAccountId] = accountDetails;
+        return accountDetails;
+}
+
 async function hbarTransferTransaction(client, recipient, amount) {
     const transaction = new TransferTransaction()
         .addHbarTransfer(client.operatorAccountId, Hbar.fromTinybars(-amount))
@@ -149,6 +170,7 @@ export {
     hcsMessageTransaction,
     hbarTransferTransaction,
     createNewAccount,
+    createNewEcAccount,
     createFungibleToken,
     associateTokenToAccount,
     transferToken,
