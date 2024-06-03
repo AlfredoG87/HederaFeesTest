@@ -90,7 +90,7 @@ describe("Hedera Transaction Fee Tests", function () {
 
     it("A fungible token transfer", async function () {
         for (const client of Object.values(clients)) {
-            const txResponse = await transferToken(client.client, fungibleTokenId, client.client.operatorAccountId, recipientAccount.accountId, 5);
+            const txResponse = await transferToken(client.client, fungibleTokenId, client.client.operatorAccountId, recipientAccount.accountId, 1);
             await assertAndReportCost(txResponse, client, testResults, "A fungible token transfer");
         }
     });
