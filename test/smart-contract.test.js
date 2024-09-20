@@ -203,7 +203,7 @@ describe("Hedera Transaction Fee Tests", function () {
     });
 
     const testCase4 = "A smart contract execution of a system contract HTS CryptoTransfer of 1 NFT";
-    it.only(testCase4, async function() {
+    it(testCase4, async function() {
         // Using ContractExecuteTransaction
         // Move NFT from ED to EC account
         // Using ContractExecuteTransaction is failing
