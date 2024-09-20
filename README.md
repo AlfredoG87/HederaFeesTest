@@ -15,12 +15,22 @@ To run the project, follow these steps:
         # EC Previewnet
         EC_PRIVATE_KEY=
         EC_ACCOUNT_ID=
+        # For RPC Provider and Ether Wallet
+        RPC_PROVIDER_URL=
+        RPC_EC_PRIVATE_KEY=
     ```
 
 3. Install the required dependencies by running the following command in the terminal:
 
     ```shell
     npm install
+    ```
+
+4. Compile the needed smart contracts
+    ```shell
+    cd smart-contract-subproject
+    npm install
+    npx hardhat compile
     ```
 
 4. Run the tests by executing the following command:
