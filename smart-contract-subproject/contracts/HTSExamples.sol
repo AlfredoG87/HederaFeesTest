@@ -12,6 +12,7 @@ contract HTSExamples is HederaTokenService, ExpiryHelper, KeyHelper {
     event ResponseCode(int responseCode);
     event HbarTransferParams(address sender, address recipient, int64 amount);
     event TokenTransferParams(address sender, address recipient, int64 amount, address tokenId);
+    event NftTokenTransferParams(address nftTokenId, int64 nftSerialId, address sender, address recipient);
 
     function trasnsferHbar(address recipient, int64 amount) public returns (int responseCode) {
 
@@ -52,6 +53,29 @@ contract HTSExamples is HederaTokenService, ExpiryHelper, KeyHelper {
         tokenTransferList[0] = IHederaTokenService.TokenTransferList(tokenId, accountAmounts, nftTransferList);
 
         // call crypto transfer
+        responseCode = HederaTokenService.cryptoTransfer(hbarTransferList, tokenTransferList);
+
+        emit ResponseCode(responseCode);
+    }
+
+    function transferNFT(address nftTokenId, int64 nftSerialId, address sender, address recipient) public returns (int responseCode) {
+
+        emit NftTokenTransferParams(nftTokenId, nftSerialId, sender, recipient);
+
+        // create transfer list for hbar empty
+        IHederaTokenService.TransferList memory hbarTransferList = IHederaTokenService.TransferList(new IHederaTokenService.AccountAmount[](0));
+        // create account amount list, empty
+        IHederaTokenService.AccountAmount[] memory accountAmounts = new IHederaTokenService.AccountAmount[](0);
+
+        // empty nft transfer list
+        IHederaTokenService.NftTransfer[] memory nftTransferList = new IHederaTokenService.NftTransfer[](1);
+        nftTransferList[0] = IHederaTokenService.NftTransfer(sender, recipient, nftSerialId, false);
+
+        // create token transfer list with token id, account amounts and nft transfer list
+        IHederaTokenService.TokenTransferList[] memory tokenTransferList = new IHederaTokenService.TokenTransferList[](1);
+        tokenTransferList[0] = IHederaTokenService.TokenTransferList(nftTokenId, accountAmounts, nftTransferList);
+
+        // call crypto Transfer
         responseCode = HederaTokenService.cryptoTransfer(hbarTransferList, tokenTransferList);
 
         emit ResponseCode(responseCode);

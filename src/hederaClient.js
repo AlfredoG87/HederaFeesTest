@@ -10,6 +10,12 @@ async function createClient(type) {
     if (type === "ED") {
         accountId = process.env.ED_ACCOUNT_ID;
         privateKey = PrivateKey.fromStringDer(process.env.ED_PRIVATE_KEY);
+
+
+
+
+        privateKey = PrivateKey.fromStringED25519
+
     } else if (type === "EC") {
         accountId = process.env.EC_ACCOUNT_ID;
         privateKey = PrivateKey.fromStringDer(process.env.EC_PRIVATE_KEY);

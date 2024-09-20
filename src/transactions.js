@@ -127,7 +127,7 @@ async function createNFTToken(client, tokenName, tokenSymbol) {
 async function mintNFTToken(client, tokenId) {
     const transaction = new TokenMintTransaction()
         .setTokenId(tokenId)
-        .setMetadata([Buffer.from("metadata1"), Buffer.from("metadata2")]);
+        .setMetadata([Buffer.from("metadata1"), Buffer.from("metadata2"), Buffer.from("metadata2"), Buffer.from("metadata2"), Buffer.from("metadata2")]);
 
     const txResponse = await transaction.execute(client);
     const receipt = await txResponse.getReceipt(client);    
@@ -139,10 +139,15 @@ async function mintNFTToken(client, tokenId) {
 async function associateTokenToAccount(client, tokenId, accountId) {
     const transaction = new TokenAssociateTransaction()
         .setAccountId(accountId)
-        .setTokenIds([tokenId]);
+        .setTokenIds([tokenId]);    
 
-    const txResponse = await transaction.execute(client);
-
+    const txResponse = await transaction.execute(client);        
+    const txRecord = await txResponse.getRecord(client);    
+    if(txRecord.receipt.status == "SUCCESS") {
+        console.log(`Token: ${tokenId} associated with account: ${accountId}`)
+    } else {
+        console.log(`Token: ${tokenId} NOT associated with account: ${accountId}`)
+    }
     return txResponse;
 }
 

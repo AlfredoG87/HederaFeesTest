@@ -81,10 +81,24 @@ describe("Hedera Transaction Fee Tests", function () {
         }
     });
 
+    it("HCS message with 2 byte", async function () {        
+        for (const client of Object.values(clients)) {
+            const txResponse = await hcsMessageTransaction(client.client, topicID, "BB");
+            await assertAndReportCost(txResponse, client, testResults, "HCS message with 2 byte");
+        }
+    });
+
     it("1 Tinybar transfer", async function () {        
         for (const client of Object.values(clients)) {
             const txResponse = await hbarTransferTransaction(client.client, recipientAccount.accountId, 1);
             await assertAndReportCost(txResponse, client, testResults, "1 Tiny bar transfer");
+        }
+    });
+
+    it("2 Tinybar transfer", async function () {        
+        for (const client of Object.values(clients)) {
+            const txResponse = await hbarTransferTransaction(client.client, recipientAccount.accountId, 2);
+            await assertAndReportCost(txResponse, client, testResults, "2 Tiny bar transfer");
         }
     });
 
@@ -118,7 +132,7 @@ async function assertAndReportCost(txResponse, client, testResults, testDescript
     const transactionFee = record.transactionFee.toTinybars();
     expect(transactionFee.toNumber()).to.be.greaterThan(0);
     const exchangeRate = record.receipt.exchangeRate.cents;
-    testResults[`${testDescription} - KeyType: ${client.name}`] = { "tiny bar": transactionFee.toNumber(), "exchange rate in cents" : exchangeRate };
+    testResults[`${testDescription} - KeyType: ${client.name}`] = { "tiny bar": transactionFee.toNumber(), "exchange rate in cents" : exchangeRate, "transactionId": record.transactionId.toString()  };
 }
 
 

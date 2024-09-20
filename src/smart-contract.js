@@ -6,9 +6,7 @@ import {
     EthereumTransactionData,
     ContractCreateFlow,    
     AccountId,
-    AccountAllowanceApproveTransaction,
-    TransactionResponse
-    
+    AccountAllowanceApproveTransaction
  } from "@hashgraph/sdk";
 
  import { ethers } from 'ethers';
@@ -119,6 +117,21 @@ async function getFungibleTokenTransferHTSExampleContractCallTransaction(htsExam
         return contractCallTx;
 }
 
+async function getNftTokenTransferHTSExampleContractCallTransaction(htsExamplesSmartContractId, nftTokenId, nftSerialId, senderEVMAddress, recipientAccountEvmAddress) {
+    //     function transferNFT(address nftTokenId, int64 nftSerialId, address sender, address recipient) public returns (int responseCode) {
+    const contractCallTx = new ContractExecuteTransaction()
+        .setContractId(htsExamplesSmartContractId)        
+        .setFunction("transferNFT", new ContractFunctionParameters()
+            .addAddress(nftTokenId)            
+            .addInt64(nftSerialId)
+            .addAddress(senderEVMAddress)
+            .addAddress(recipientAccountEvmAddress)
+            )        
+        .setGas(200_000); // GAS LIMIT
+
+        return contractCallTx;
+}
+
 async function getFungibleTokenTransferHTSExampleEthererumTransaction(htsExamplesSmartContractEVMAddress, senderEVMAddress, recipientAccountEvmAddress, fungibleTokenEVMAddress) {
     const provider = await getRPCProvider();        
     const wallet = await getWallet(provider);
@@ -151,6 +164,40 @@ async function getFungibleTokenTransferHTSExampleEthererumTransaction(htsExample
 
 
 }
+
+async function getNftTransferHTSExampleEthererumTransaction(htsExamplesSmartContractEVMAddress, nftTokenEVMAddress, nftSerialId, senderEVMAddress, recipientAccountEvmAddress) {
+    const provider = await getRPCProvider();        
+    const wallet = await getWallet(provider);
+    
+    const contract = new ethers.Contract(htsExamplesSmartContractEVMAddress, htsExamplesJson.abi, wallet);
+
+    const chainId = await wallet.getChainId();
+    const gasPrice = ethers.utils.hexValue(await wallet.getGasPrice());
+    const gasLimit = ethers.utils.hexValue(200_000); // GAS LIMIT
+
+    //     function transferNFT(address nftTokenId, int64 nftSerialId, address sender, address, address recipient) public returns (int responseCode) {
+    const tx = await contract.populateTransaction.transferNFT(nftTokenEVMAddress, nftSerialId, senderEVMAddress, recipientAccountEvmAddress);
+    const transactionCount = await wallet.getTransactionCount();
+
+    tx.gasLimit = gasLimit;
+    tx.gasPrice = gasPrice;
+    tx.nonce = transactionCount;
+    tx.chainId = chainId;        
+    
+    const signedTx = await wallet.signTransaction(tx);
+
+    const transactionBuffer = Buffer.from(prune0x(signedTx), 'hex');
+    const ethereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
+    
+    const ethereumTransaction = new EthereumTransaction()
+    .setEthereumData(ethereumTransactionData.toBytes())
+    .setMaxTransactionFee(Hbar.fromTinybars(15_000_000*85))
+
+    return ethereumTransaction;
+
+
+}
+
 
 async function getHbarTransferHTSExampleEthererumTransaction(htsExamplesSmartContractEVMAddress, recipientAccountEvmAddress) {
     const provider = await getRPCProvider();        
@@ -197,7 +244,7 @@ async function approveHbar(client, ownerAccountKey, ownerAccountId, spenderAccou
 
     const receipt = await txResponse.getReceipt(client);
 
-    console.log("Approval of HBAR receipt: " + receipt.status.toString());
+    console.log("Approval of HBAR receipt: " + receipt.status.toString(), " for " + amount + " tinybars, to: " + spenderAccountId.toString());
 
 
 }
@@ -245,5 +292,7 @@ export {
     approveTokenTransfer,
     approveNFTTransfer,
     getFungibleTokenTransferHTSExampleContractCallTransaction,
-    getFungibleTokenTransferHTSExampleEthererumTransaction
+    getFungibleTokenTransferHTSExampleEthererumTransaction,
+    getNftTokenTransferHTSExampleContractCallTransaction,
+    getNftTransferHTSExampleEthererumTransaction
  };

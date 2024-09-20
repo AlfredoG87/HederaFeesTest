@@ -13,7 +13,9 @@ import {
     createNewEcAccount, 
     createFungibleToken,
     associateTokenToAccount,
-    transferToken
+    transferToken,
+    createNFTToken,
+    mintNFTToken
 } from "../src/transactions.js";
 
 import { 
@@ -27,7 +29,9 @@ import {
     approveTokenTransfer,
     approveNFTTransfer,
     getFungibleTokenTransferHTSExampleContractCallTransaction,
-    getFungibleTokenTransferHTSExampleEthererumTransaction
+    getFungibleTokenTransferHTSExampleEthererumTransaction,
+    getNftTokenTransferHTSExampleContractCallTransaction,
+    getNftTransferHTSExampleEthererumTransaction
 } from "../src/smart-contract.js";
 
 import dotenv from "dotenv";
@@ -67,6 +71,10 @@ describe("Hedera Transaction Fee Tests", function () {
     let fungibleTokenId;
     let fungibleTokenEVMAddress;
 
+    let nftTokenId;
+    let nftTokenEVMAddress;
+    let nftSerialId;
+
     before(async function () {
 
         // create clients
@@ -90,7 +98,6 @@ describe("Hedera Transaction Fee Tests", function () {
         await approveHbar(edClient, ecPrivateKey, ecAccountId, htsExamplesSmartContractId,  10_000_000);
         await approveHbar(edClient, edPrivateKey, edAccountId, htsExamplesSmartContractId,  10_000_000);
 
-
         // create a fungible token and associate it with all accounts transfer 100 tokens to each account
         fungibleTokenId = await createFungibleToken(edClient, "TokenNameForHTS", "TSHTS", 1000);
         fungibleTokenEVMAddress = "0x"+AccountId.fromString(fungibleTokenId.toString()).toSolidityAddress();
@@ -99,21 +106,28 @@ describe("Hedera Transaction Fee Tests", function () {
         // associate the token to all accounts
         await associateTokenToAccount(ecClient, fungibleTokenId, ecClient.operatorAccountId);
         recipientClient = await createClientWithOperatorAccount(recipientAccount.accountId, recipientAccount.privateKey);
-        const txResponse = await associateTokenToAccount(recipientClient, fungibleTokenId, recipientAccount.accountId);
-        //console.log("Token associated with recipient account: " + txResponse);        
+        const txResponse = await associateTokenToAccount(recipientClient, fungibleTokenId, recipientAccount.accountId);        
 
         // transfer 100 tokens to EC account
-        const transferTokenResponse = await transferToken(edClient, fungibleTokenId, edClient.operatorAccountId, ecClient.operatorAccountId, 100);
-        //console.log("Token transfer response: " + transferTokenResponse);
+        const transferTokenResponse = await transferToken(edClient, fungibleTokenId, edClient.operatorAccountId, ecClient.operatorAccountId, 100);        
 
-        // Approve HTSExample Contract to transfer fungible token
-        //async function approveTokenTransfer(client, ownerAccountKey, ownerAccountId, spenderAccountId, amount, fungibleTokenId)
+        // Approve HTSExample Contract to transfer fungible token        
         await approveTokenTransfer(edClient, ecPrivateKey, ecAccountId, htsExamplesSmartContractId, 100, fungibleTokenId);
         await approveTokenTransfer(edClient, edPrivateKey, edAccountId, htsExamplesSmartContractId, 100, fungibleTokenId);
 
-
         /// NFT Preps
+        nftTokenId = await createNFTToken(edClient, "NFT2", "NFT2");
+        nftTokenEVMAddress = "0x"+AccountId.fromString(nftTokenId.toString()).toSolidityAddress();
+        console.log("NFT Token ID: " + nftTokenId, " EVM Address: " + nftTokenEVMAddress);
+        // associate the token to all accounts
+        await associateTokenToAccount(ecClient, nftTokenId, ecClient.operatorAccountId);
+        await associateTokenToAccount(recipientClient, nftTokenId, recipientAccount.accountId);        
 
+        //mint NFT
+        nftSerialId = await mintNFTToken(edClient, nftTokenId, ecClient.operatorAccountId);
+        console.log("NFT Serial ID: " + nftSerialId);
+
+        approveNFTTransfer(edClient, edPrivateKey, edAccountId, htsExamplesSmartContractId, nftTokenId);
 
     });
 
@@ -168,7 +182,7 @@ describe("Hedera Transaction Fee Tests", function () {
     });
 
     const testCase3 = "A smart contract execution of a system contract HTS CryptoTransfer of 1 fungible token";
-    it.only(testCase3, async function() {
+    it(testCase3, async function() {
         // Using ContractExecuteTransaction
         for (const client of Object.values(clients)) {
             //async function getFungibleTokenTransferHTSExampleContractCallTransaction(htsExamplesSmartContractId, senderEVMAddress, recipientAccountEvmAddress, fungibleTokenEVMAddress) {
@@ -188,6 +202,27 @@ describe("Hedera Transaction Fee Tests", function () {
         }
     });
 
+    const testCase4 = "A smart contract execution of a system contract HTS CryptoTransfer of 1 NFT";
+    it.only(testCase4, async function() {
+        // Using ContractExecuteTransaction
+        // Move NFT from ED to EC account
+        // Using ContractExecuteTransaction is failing
+        const tx = await getNftTokenTransferHTSExampleContractCallTransaction(htsExamplesSmartContractId, nftTokenEVMAddress, 1, edEVMAddress, ecEVMAddress)
+        const txResponse = await tx.execute(edClient);
+        await assertAndReportCost(txResponse, clients["ED"], testResults, testCase4 + " (ContractExecuteTransaction)");
+
+        // Using EthereumTransaction
+        const txET = await getNftTransferHTSExampleEthererumTransaction(htsExamplesSmartContractEVMAddress, nftTokenEVMAddress, 2, edEVMAddress, ecEVMAddress);
+        const txResponseET = await txET.execute(edClient);
+        await assertAndReportCost(txResponseET, clients["ED"], testResults, testCase4 + " (EthereumTransaction)");
+        
+        // Move NFT from EC to ED account
+
+
+        
+
+    });
+
 });
 
 
@@ -196,7 +231,8 @@ async function assertAndReportCost(txResponse, client, testResults, testDescript
     const transactionFee = record.transactionFee.toTinybars();
     expect(transactionFee.toNumber()).to.be.greaterThan(0);
     const exchangeRate = record.receipt.exchangeRate.cents;
-    testResults[`${testDescription} - Client KeyType: ${client.name}`] = { "tiny bar": transactionFee.toNumber(), "exchange rate in cents" : exchangeRate };
+    record.transaction
+    testResults[`${testDescription} - Client KeyType: ${client.name}`] = { "tiny bar": transactionFee.toNumber(), "exchange rate in cents" : exchangeRate, "transactionId": record.transactionId.toString()  };
 }
 
 function convertAccountIdtoLongZeroAddress(accountId) {
