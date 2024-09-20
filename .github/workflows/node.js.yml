@@ -28,10 +28,17 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
-    - run: npm run build --if-present
+    - run: npm run build --if-present    
     #compile smart contracts
     - run: |
         cd smart-contract-subproject
         npm install
         npx hardhat compile
     - run: npm test
+      env: 
+        ED_PRIVATE_KEY: ${{ secrets.ED_PRIVATE_KEY }}
+        ED_ACCOUNT_ID: ${{ secrets.ED_ACCOUNT_ID }}
+        EC_PRIVATE_KEY: ${{ secrets.EC_PRIVATE_KEY }}
+        EC_ACCOUNT_ID: ${{ secrets.EC_ACCOUNT_ID }}
+        RPC_PROVIDER_URL: ${{ secrets.RPC_PROVIDER_URL }}
+        RPC_EC_PRIVATE_KEY: ${{ secrets.RPC_EC_PRIVATE_KEY }}
