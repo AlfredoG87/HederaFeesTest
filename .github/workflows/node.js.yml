@@ -17,8 +17,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+        node-version: [18.x, 20.x]
 
     steps:
     - uses: actions/checkout@v4
@@ -27,13 +26,14 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+    
     - run: npm ci
-    - run: npm run build --if-present    
-    #compile smart contracts
+    # compile smart contracts
     - run: |
         cd smart-contract-subproject
         npm install
         npx hardhat compile
+    # run tests
     - run: npm test
       env: 
         ED_PRIVATE_KEY: ${{ secrets.ED_PRIVATE_KEY }}
